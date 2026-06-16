@@ -46,6 +46,8 @@
 
 <script>
 
+// ================= CHAPTERS =================
+
 const chapters = {
   "indice": generateRange(1, 11),
   "00": generateRange(12, 29),
@@ -65,13 +67,17 @@ function generateRange(start, end) {
 let currentChapter = "indice";
 let index = 0;
 
+// ================= LOAD PAGE =================
+
 function loadPage() {
   const img = chapters[currentChapter][index];
 
-  const path = "chapters/" + currentChapter + "/" + img;
-  document.getElementById("page").src = path;
+  const path = `./chapters/${currentChapter}/${img}`;
 
-  document.getElementById("page").onload = () => {
+  const page = document.getElementById("page");
+  page.src = path;
+
+  page.onload = () => {
     renderHotspots(img);
   };
 }
@@ -104,15 +110,11 @@ loadPage();
 let zoom = 1;
 
 function applyZoom() {
-
   const container = document.getElementById("pageContainer");
   container.style.transform = `scale(${zoom})`;
   container.style.transformOrigin = "top left";
 
-  const current = document.getElementById("page")
-    .src.split("/")
-    .pop();
-
+  const current = chapters[currentChapter][index];
   renderHotspots(current);
 }
 
@@ -138,7 +140,6 @@ function fitToPage() {
 // ================= VIDEO =================
 
 function openVideo(src) {
-
   const modal = document.getElementById("videoModal");
   const player = document.getElementById("videoPlayer");
 
@@ -151,7 +152,6 @@ function openVideo(src) {
 }
 
 function closeVideo() {
-
   const modal = document.getElementById("videoModal");
   const player = document.getElementById("videoPlayer");
 
@@ -162,7 +162,7 @@ function closeVideo() {
 }
 
 
-// ================= HOTSPOT =================
+// ================= HOTSPOTS =================
 
 function renderHotspots(imgName) {
 
@@ -194,10 +194,10 @@ function renderHotspots(imgName) {
 }
 
 
-// resize fix
+// ================= RESIZE =================
+
 window.addEventListener("resize", () => {
-  const img = document.getElementById("page");
-  const current = img.src.split("/").pop();
+  const current = chapters[currentChapter][index];
   renderHotspots(current);
 });
 
@@ -208,10 +208,7 @@ let debugMode = false;
 
 function toggleDebug() {
   debugMode = !debugMode;
-
-  if (debugMode) {
-    alert("Debug attivo: clicca sull'immagine per coordinate");
-  }
+  alert(debugMode ? "Debug attivo" : "Debug disattivo");
 }
 
 document.getElementById("page").addEventListener("click", function (e) {
@@ -227,7 +224,7 @@ document.getElementById("page").addEventListener("click", function (e) {
 });
 
 
-// ================= HOTSPOTS =================
+// ================= HOTSPOTS DATA =================
 
 const hotspots = {
   "SOP[73].png": [
@@ -251,11 +248,7 @@ const hotspots = {
 };
 
 
-// ================= PWA SERVICE WORKER =================
-
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
-}
+// ================= PWA =================
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
