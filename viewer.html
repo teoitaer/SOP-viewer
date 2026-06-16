@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#000000">
+</head>
+
+<body>
+
+<div class="nav">
+  <button onclick="prev()">← Prev</button>
+
+  <select onchange="changeChapter(this.value)">
+    <option value="indice">indice</option>
+    <option value="00">Chapter 0</option>
+    <option value="01">Chapter 1</option>
+    <option value="02">Chapter 2</option>
+    <option value="03">Chapter 3</option>
+  </select>
+
+  <button onclick="next()">Next →</button>
+  <button onclick="zoomOut()">-</button>
+  <button onclick="fitToPage()">Fit</button>
+  <button onclick="zoomIn()">+</button>
+  <button onclick="toggleDebug()">Debug Hotspot</button>
+</div>
+
+<div id="pageContainer">
+  <img id="page">
+  <div id="hotspotLayer"></div>
+</div>
+
+<!-- VIDEO MODAL -->
+<div id="videoModal" class="modal" onclick="closeVideo()">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <video id="videoPlayer" controls autoplay></video>
+    <button class="close-btn" onclick="closeVideo()">✕</button>
+  </div>
+</div>
+
+<script>
+
+const chapters = {
+  "indice": generateRange(1, 11),
+  "00": generateRange(12, 29),
+  "01": generateRange(30, 33),
+  "02": generateRange(34, 136),
+  "03": generateRange(137, 175)
+};
+
+function generateRange(start, end) {
+  let arr = [];
+  for (let i = start; i <= end; i++) {
+    arr.push(`SOP[${i}].png`);
+  }
+  return arr;
+}
+
+let currentChapter = "indice";
+let index = 0;
+
+function loadPage() {
+  const img = chapters[currentChapter][index];
+
+  const path = "chapters/" + currentChapter + "/" + img;
+  document.getElementById("page").src = path;
+
+  document.getElementById("page").onload = () => {
+    renderHotspots(img);
+  };
+}
+
+function next() {
+  if (index < chapters[currentChapter].length - 1) {
+    index++;
+    loadPage();
+  }
+}
+
+function prev() {
+  if (index > 0) {
+    index--;
+    loadPage();
+  }
+}
+
+function changeChapter(ch) {
+  currentChapter = ch;
+  index = 0;
+  loadPage();
+}
+
+loadPage();
+
+
+// ================= ZOOM =================
+
+let zoom = 1;
+
+function applyZoom() {
+
+  const container = document.getElementById("pageContainer");
+  container.style.transform = `scale(${zoom})`;
+  container.style.transformOrigin = "top left";
+
+  const current = document.getElementById("page")
+    .src.split("/")
+    .pop();
+
+  renderHotspots(current);
+}
+
+function zoomIn() {
+  zoom += 0.1;
+  applyZoom();
+}
+
+function zoomOut() {
+  zoom = Math.max(0.2, zoom - 0.1);
+  applyZoom();
+}
+
+function fitToPage() {
+  const img = document.getElementById("page");
+  const scaleY = window.innerHeight / img.naturalHeight;
+
+  zoom = scaleY;
+  applyZoom();
+}
+
+
+// ================= VIDEO =================
+
+function openVideo(src) {
+
+  const modal = document.getElementById("videoModal");
+  const player = document.getElementById("videoPlayer");
+
+  player.pause();
+  player.src = src;
+  player.load();
+
+  modal.style.display = "flex";
+  player.play();
+}
+
+function closeVideo() {
+
+  const modal = document.getElementById("videoModal");
+  const player = document.getElementById("videoPlayer");
+
+  player.pause();
+  player.currentTime = 0;
+
+  modal.style.display = "none";
+}
+
+
+// ================= HOTSPOT =================
+
+function renderHotspots(imgName) {
+
+  const layer = document.getElementById("hotspotLayer");
+  const img = document.getElementById("page");
+
+  layer.innerHTML = "";
+
+  const list = hotspots[imgName];
+  if (!list) return;
+
+  list.forEach(h => {
+
+    const div = document.createElement("div");
+
+    div.style.position = "absolute";
+    div.style.left = (h.x * img.clientWidth) + "px";
+    div.style.top = (h.y * img.clientHeight) + "px";
+    div.style.width = (h.w * img.clientWidth) + "px";
+    div.style.height = (h.h * img.clientHeight) + "px";
+
+    div.style.pointerEvents = "auto";
+    div.style.cursor = "pointer";
+
+    div.onclick = () => openVideo(h.video);
+
+    layer.appendChild(div);
+  });
+}
+
+
+// resize fix
+window.addEventListener("resize", () => {
+  const img = document.getElementById("page");
+  const current = img.src.split("/").pop();
+  renderHotspots(current);
+});
+
+
+// ================= DEBUG =================
+
+let debugMode = false;
+
+function toggleDebug() {
+  debugMode = !debugMode;
+
+  if (debugMode) {
+    alert("Debug attivo: clicca sull'immagine per coordinate");
+  }
+}
+
+document.getElementById("page").addEventListener("click", function (e) {
+
+  if (!debugMode) return;
+
+  const rect = this.getBoundingClientRect();
+
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
+
+  alert(`x: ${x.toFixed(4)}\ny: ${y.toFixed(4)}`);
+});
+
+
+// ================= HOTSPOTS =================
+
+const hotspots = {
+  "SOP[73].png": [
+    {
+      x: 0.0950,
+      y: 0.6065,
+      w: 0.809,
+      h: 0.263,
+      video: "videos/stallo_power_on.mp4"
+    }
+  ],
+  "SOP[31].png": [
+    {
+      x: 0.25,
+      y: 0.40,
+      w: 0.10,
+      h: 0.08,
+      video: "videos/engine.mp4"
+    }
+  ]
+};
+
+
+// ================= PWA SERVICE WORKER =================
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+
+</script>
+
+</body>
+</html>
